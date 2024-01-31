@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:app_settings/app_settings.dart';
+import 'package:background_fetch/background_fetch.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -22,6 +22,9 @@ import 'package:todo_app/theme/colors.dart';
 void main() async {
   await GetStorage.init();
   WidgetsFlutterBinding.ensureInitialized();
+// Set up background fetch
+    FirebaseCloudMessaging().scheduleNotifications;
+    BackgroundFetch.registerHeadlessTask(FirebaseCloudMessaging().backgroundFetchHeadlessTask);
 
   Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp(
@@ -49,6 +52,8 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await firebaseCloudMessaging.setupFlutterNotifications();
   await firebaseCloudMessaging.getFirebaseNotification();
+  firebaseCloudMessaging.firebaseInit();
+  // firebaseCloudMessaging.backgroundFetchHeadlessTask();
 
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   await analytics.logAppOpen();
@@ -72,6 +77,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   print(message.notification!.title.toString());
 }
+
+
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});

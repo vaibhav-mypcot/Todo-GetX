@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:todo_app/routes/app_page.dart';
 import 'package:uuid/uuid.dart';
@@ -17,6 +18,11 @@ class AddTaskController extends GetxController {
   // Select Time method
   final selectedTime = TimeOfDay.now().obs;
   String timeValue = 'Select Time';
+
+  @override
+  void onInit() {
+    super.onInit();
+  }
 
   Future<void> selectTime(BuildContext context) async {
     final TimeOfDay? pickedTime = await showTimePicker(
@@ -37,6 +43,7 @@ class AddTaskController extends GetxController {
   // Select date method
   var selectedDate = DateTime.now().obs;
   String date = DateFormat('dd MMM yyyy').format(DateTime.now());
+  String reminder =  DateFormat('dd MMM yyyy').format(DateTime.now());
 
   Future<void> selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -61,14 +68,18 @@ class AddTaskController extends GetxController {
         selectedDate.value.day,
         selectedTime.value.hour,
         selectedTime.value.minute);
+   
+    reminder = selectedDateTime.toString();
 
     // Check if selected time is 5 minutes greater than the current time
     if (selectedDateTime.isAfter(currentDate.add(Duration(minutes: 5)))) {
       // Do something if the condition is met
+
       print('Selected time is greater than 5 minutes from the current time.');
       await onAddTaskClicked(context, bellIc);
     } else {
       // Handle the case where the condition is not met
+      print('Selected time: ${selectedDateTime}');
       Get.snackbar('Error',
           'Selected time should be 5 minutes greater than current time.');
     }
@@ -104,7 +115,7 @@ class AddTaskController extends GetxController {
           'time': selectedTime.value.format(context),
           'taskId': DateFormat('HH:mm:ss').format(DateTime.now()),
           'bellIC': bellIC,
-          'timeStamp': selectedDate.value,
+          'reminderTime': reminder,
         });
 
         Get.snackbar(
@@ -115,8 +126,9 @@ class AddTaskController extends GetxController {
           backgroundColor: Colors.white,
         );
 
-        // taskFormKey.currentState!.reset();
+        taskFormKey.currentState!.reset();
         task.clear();
+        
         Get.toNamed(AppRoutes.homeScreen);
         // Get.until((HomeScreen) => false);
 

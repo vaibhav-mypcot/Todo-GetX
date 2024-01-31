@@ -107,7 +107,7 @@ class HomeController extends GetxService {
         .collection('task_list')
         .doc(FirebaseAuth.instance.currentUser!.uid)
         .collection('notes')
-        .orderBy('currentTime');
+        .orderBy('taskId');
 
     QuerySnapshot getData = await querySnapshot.get();
     Map data = getData.docs[index].data() as Map;

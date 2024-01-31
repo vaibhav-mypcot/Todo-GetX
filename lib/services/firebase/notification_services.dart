@@ -1,9 +1,14 @@
 import 'dart:math';
 
 import 'package:app_settings/app_settings.dart';
+import 'package:background_fetch/background_fetch.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:todo_app/services/firebase/reminder.dart';
 
 class NotificationServices {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -31,7 +36,7 @@ class NotificationServices {
     }
   }
 
-  void initLocalNotifivation(
+  void initLocalNotification(
       BuildContext context, RemoteMessage message) async {
     var androidInitializationSettings =
         const AndroidInitializationSettings('mipmap/ic_launcher');
@@ -107,4 +112,120 @@ class NotificationServices {
       print('refresh');
     });
   }
+
+  // schedule notification
+  Future<void> scheduleNotification(
+    int id,
+    String title,
+    String body,
+    DateTime scheduledTime,
+  ) async {
+    await _flutterLocalNotificationPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'your_channel_id',
+          'your_channel_name',
+          // 'your_channel_description',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+
+  /// -------------------------------------------------------------------------------
+   Stream<List<Reminder>> fetchRemindersFromFirestore() {
+  try {
+   
+   User? user = FirebaseAuth.instance.currentUser;
+        String userId = user!.uid;
+        
+     Stream<QuerySnapshot<Map<String, dynamic>>> stream = FirebaseFirestore.instance
+        .collection('task_list')
+        .doc(userId)
+        .collection('notes').snapshots()
+        ;
+
+    return stream.map((querySnapshot) {
+      return querySnapshot.docs.map((doc) {
+        // Assuming your Firestore document has 'task' and 'reminderTime' fields
+        String task = doc['task'];
+        Timestamp timestamp = doc['reminderTime'];
+        DateTime reminderTime = timestamp.toDate();
+
+        return Reminder(
+          task: task,
+          reminderTime: reminderTime,
+        );
+      }).toList();
+    });
+  } catch (e) {
+    print("Error fetching reminders: $e");
+    return Stream.value([]); // Return an empty stream in case of an error
+  }
+}
+
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void backgroundFetchHeadlessTask(String taskId) async {
+  try {
+    // Fetch reminder data from Firestore
+    var remindersStream = await fetchRemindersFromFirestore();
+
+     // Listen to the stream and schedule notifications
+    await for (var reminders in remindersStream) {
+      scheduleNotifications(reminders);
+    }
+  } finally {
+    BackgroundFetch.finish(taskId);
+  }
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void scheduleNotifications(List<Reminder> reminders) {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  // Initialize notification plugin if not already initialized
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('app_icon');
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+  flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  AndroidNotificationChannel channel = AndroidNotificationChannel(
+        Random.secure().nextInt(100000).toString(),
+        'High Importance Notifications',
+        importance: Importance.max);
+
+  // Schedule notifications for each reminder
+  for (var reminder in reminders) {
+    flutterLocalNotificationsPlugin.zonedSchedule(
+      reminder.task.hashCode, // Unique ID for the notification
+      'Reminder',
+      reminder.task,
+      tz.TZDateTime.from(reminder.reminderTime, tz.local),
+       NotificationDetails(
+        android: AndroidNotificationDetails(
+          channel.id.toString(),
+          'Reminders',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+}
 }

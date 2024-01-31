@@ -43,7 +43,7 @@ class HomeScreen extends StatelessWidget {
         .doc(signinController.auth.currentUser!.uid)
         .collection('notes')
         .orderBy(
-          'isCompleted',
+          'taskId',
         );
 
     return Scaffold(
