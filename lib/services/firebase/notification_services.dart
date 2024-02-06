@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:todo_app/services/firebase/reminder.dart';
 
@@ -158,12 +159,13 @@ class NotificationServices {
       return querySnapshot.docs.map((doc) {
         // Assuming your Firestore document has 'task' and 'reminderTime' fields
         String task = doc['task'];
-        Timestamp timestamp = doc['reminderTime'];
-        DateTime reminderTime = timestamp.toDate();
+        String timestamp = doc['reminderTime'];
+     
 
         return Reminder(
           task: task,
-          reminderTime: reminderTime,
+          reminderTime: timestamp,
+          bellIc: false,
         );
       }).toList();
     });
@@ -213,7 +215,7 @@ void scheduleNotifications(List<Reminder> reminders) {
       reminder.task.hashCode, // Unique ID for the notification
       'Reminder',
       reminder.task,
-      tz.TZDateTime.from(reminder.reminderTime, tz.local),
+      tz.TZDateTime.from( DateTime.parse(reminder.reminderTime) , tz.local),
        NotificationDetails(
         android: AndroidNotificationDetails(
           channel.id.toString(),

@@ -92,7 +92,7 @@ class HomeScreen extends StatelessWidget {
                           String time = data['time'];
                           String date = data['date'];
                           bool isBellIc = data['bellIC'];
-
+                          
                           QueryDocumentSnapshot documentSnapshot =
                               snapshot.data!.docs[index];
                           String docID = documentSnapshot.reference.id;

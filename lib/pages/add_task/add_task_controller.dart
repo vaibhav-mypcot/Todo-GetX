@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:todo_app/routes/app_page.dart';
+import 'package:todo_app/services/firebase/reminder.dart';
 import 'package:uuid/uuid.dart';
 
 class AddTaskController extends GetxController {
@@ -43,7 +43,7 @@ class AddTaskController extends GetxController {
   // Select date method
   var selectedDate = DateTime.now().obs;
   String date = DateFormat('dd MMM yyyy').format(DateTime.now());
-  String reminder =  DateFormat('dd MMM yyyy').format(DateTime.now());
+  String reminder = DateFormat('dd MMM yyyy').format(DateTime.now());
 
   Future<void> selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -68,18 +68,19 @@ class AddTaskController extends GetxController {
         selectedDate.value.day,
         selectedTime.value.hour,
         selectedTime.value.minute);
-   
-    reminder = selectedDateTime.toString();
+
+    reminder = DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDateTime);
 
     // Check if selected time is 5 minutes greater than the current time
     if (selectedDateTime.isAfter(currentDate.add(Duration(minutes: 5)))) {
       // Do something if the condition is met
-
+      print("remider time ${reminder}");
+      print("remider time ${selectedDateTime}");
       print('Selected time is greater than 5 minutes from the current time.');
       await onAddTaskClicked(context, bellIc);
     } else {
       // Handle the case where the condition is not met
-      print('Selected time: ${selectedDateTime}');
+      print('Selected time: ${reminder}');
       Get.snackbar('Error',
           'Selected time should be 5 minutes greater than current time.');
     }
@@ -92,7 +93,21 @@ class AddTaskController extends GetxController {
   }
 
   Future<void> onAddTaskClicked(BuildContext context, bool? bellIC) async {
-    print("current time:${currentTime}");
+    print("remider time ${reminder}");
+    print("Prenting getting list ");
+
+    fetchRemindersFromFirestore().listen((List<Reminder> reminders) {
+       Map<DateTime, String> reminderMap = {};
+      for (var reminder in reminders) {
+        if(reminder.bellIc){
+          reminderMap[DateTime.parse(reminder.reminderTime)] = reminder.task;
+          print(
+              'Task: ${reminder.task}, reminder time: ${reminder.reminderTime} ');
+        }
+        
+      }
+    });
+
     if (taskFormKey.currentState!.validate()) {
       try {
         User? user = FirebaseAuth.instance.currentUser;
@@ -128,7 +143,7 @@ class AddTaskController extends GetxController {
 
         taskFormKey.currentState!.reset();
         task.clear();
-        
+
         Get.toNamed(AppRoutes.homeScreen);
         // Get.until((HomeScreen) => false);
 
@@ -139,6 +154,39 @@ class AddTaskController extends GetxController {
             colorText: Colors.red,
             backgroundColor: Colors.white);
       }
+    }
+  }
+
+  /// +++++++++++ Check reminder time and trask in list +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //////////////////////
+
+  Stream<List<Reminder>> fetchRemindersFromFirestore() {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      String userId = user!.uid;
+
+      Stream<QuerySnapshot<Map<String, dynamic>>> stream = FirebaseFirestore
+          .instance
+          .collection('task_list')
+          .doc(userId)
+          .collection('notes')
+          .snapshots();
+
+      return stream.map((querySnapshot) {
+        return querySnapshot.docs.map((doc) {
+          // Assuming your Firestore document has 'task' and 'reminderTime' fields
+          String task = doc['task'];
+          String timestamp = doc['reminderTime'];
+          bool bellIC = doc['bellIC'];
+          return Reminder(
+            task: task,
+            reminderTime: timestamp,
+            bellIc: bellIC,
+          );
+        }).toList();
+      });
+    } catch (e) {
+      print("Error fetching reminders: $e");
+      return Stream.value([]); // Return an empty stream in case of an error
     }
   }
 }

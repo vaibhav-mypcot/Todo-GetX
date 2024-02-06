@@ -23,8 +23,8 @@ void main() async {
   await GetStorage.init();
   WidgetsFlutterBinding.ensureInitialized();
 // Set up background fetch
-    FirebaseCloudMessaging().scheduleNotifications;
-    BackgroundFetch.registerHeadlessTask(FirebaseCloudMessaging().backgroundFetchHeadlessTask);
+    // FirebaseCloudMessaging().scheduleNotifications;
+    // BackgroundFetch.registerHeadlessTask(FirebaseCloudMessaging().backgroundFetchHeadlessTask);
 
   Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp(
