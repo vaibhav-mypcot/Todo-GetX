@@ -23,21 +23,21 @@ class AddTaskScreen extends StatelessWidget with ValidationsMixin {
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Form(
-            key: taskController.taskFormKey,
-            child: Column(
-              children: [
-                CustomAppbar(
-                  press: () => Get.back(),
-                ),
+          child: Column(
+            children: [
+              CustomAppbar(
+                press: () => Get.back(),
+              ),
 
-                // Task form
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 26.w),
-                  child: Row(
-                    children: [
-                      // First Name
-                      Expanded(
+              // Task form
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 26.w),
+                child: Row(
+                  children: [
+                    // First Name
+                    Expanded(
+                      child: Form(
+                        key: taskController.taskFormKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -67,30 +67,31 @@ class AddTaskScreen extends StatelessWidget with ValidationsMixin {
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 24.h),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 28.w),
-                  child: const CustomCalendar(),
+              ),
+              SizedBox(height: 24.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 28.w),
+                child: const CustomCalendar(),
+              ),
+              SizedBox(height: 150.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: CustomButton(
+                  color: kColorPrimary,
+                  textColor: kColorWhite,
+                  label: "Add Task".tr,
+                  press: () async {
+                    Utils.showLoader();
+                    await taskController.onAddTaskClicked(context, bellIc);
+                    Get.back();
+                    Get.close(1);
+                  },
                 ),
-                SizedBox(height: 150.h),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  child: CustomButton(
-                    color: kColorPrimary,
-                    textColor: kColorWhite,
-                    label: "Add Task".tr,
-                    press: () async {
-                      Utils.showLoader();
-                      await taskController.onAddTaskClicked(context, bellIc);
-                      Get.back();
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

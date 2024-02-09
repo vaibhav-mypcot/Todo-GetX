@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:todo_app/components/loader.dart';
 import 'package:todo_app/pages/add_task/add_task_controller.dart';
-import 'package:todo_app/pages/reminder/reminder_controller.dart';
 import 'package:todo_app/theme/colors.dart';
 import 'package:todo_app/theme/text_styles.dart';
 import 'package:todo_app/utils/validation_mixin.dart';
@@ -13,10 +12,11 @@ import 'package:todo_app/widget/common/custom_textfield.dart';
 import 'package:todo_app/widget/custom_calender.dart';
 
 class ReminderScreen extends StatelessWidget with ValidationsMixin {
-  ReminderScreen({super.key});
+  ReminderScreen({super.key, this.taskLabel});
 
   final taskController = Get.find<AddTaskController>();
   bool bellIc = true;
+  final String? taskLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +52,9 @@ class ReminderScreen extends StatelessWidget with ValidationsMixin {
                             SizedBox(height: 6.h),
                             CustomTextField(
                               controller: taskController.task,
-                              hintText: 'Enter your task'.tr,
+                              hintText: taskLabel == null
+                                  ? 'Enter your task'.tr
+                                  : taskLabel.toString(),
                               hintStyle: kTextStyleGabaritoRegular.copyWith(
                                 fontSize: 14.sp,
                                 color: kColorGreyNeutral400,
@@ -84,7 +86,10 @@ class ReminderScreen extends StatelessWidget with ValidationsMixin {
                     textColor: kColorWhite,
                     label: "Add Task".tr,
                     press: () {
+                      Utils.showLoader();
                       taskController.checkDateTime(context, bellIc);
+                      Get.back();
+                      Get.close(1);
                     },
                   ),
                 ),

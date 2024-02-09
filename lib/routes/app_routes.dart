@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:get/get_navigation/src/routes/default_transitions.dart';
 import 'package:todo_app/pages/reminder/reminder_binding.dart';
 import 'package:todo_app/pages/reminder/reminder_screen.dart';
 import 'package:todo_app/pages/stream_builder/stream_builder_binding.dart';

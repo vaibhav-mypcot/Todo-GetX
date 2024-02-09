@@ -15,9 +15,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String first_name = controller.userData["first_name"];
-    String name = controller.userData["last_name"];
-    String email = controller.userData["email"];
+    String? first_name = controller.userData["first_name"];
+    String? name = controller.userData["last_name"];
+    String? email = controller.userData["email"];
 
     return Scaffold(
       body: SafeArea(

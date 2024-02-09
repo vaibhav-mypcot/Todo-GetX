@@ -1,233 +1,153 @@
-import 'dart:math';
-
-import 'package:app_settings/app_settings.dart';
-import 'package:background_fetch/background_fetch.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:get/get.dart';
+import 'package:rxdart/subjects.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:todo_app/services/firebase/reminder.dart';
+import 'package:todo_app/pages/add_task/add_task_controller.dart';
+import 'package:todo_app/pages/reminder/reminder_screen.dart';
+import 'package:todo_app/routes/app_page.dart';
 
-class NotificationServices {
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationPlugin =
+class NotifyHelper {
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  void requestNotificationsPermission() async {
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      announcement: true,
-      badge: true,
-      sound: true,
-      carPlay: true,
-      provisional: false,
+  static final onClickNotification = BehaviorSubject<String>();
+
+  //on tap on any notification
+  void onNotificationTap(NotificationResponse notificationResponse) {
+    onClickNotification.add(notificationResponse.payload!);
+    Get.lazyPut(() => AddTaskController());
+    // onClickNotification.stream.listen((event) {
+    //   Get.to(() => ReminderScreen(taskLabel: event));
+    // });
+    final String? payloaad = notificationResponse.payload;
+    Get.to(() => ReminderScreen(taskLabel: payloaad));
+  }
+
+  initializeNotification() async {
+    tz.initializeTimeZones();
+    configureLocalTimeZone();
+    // this is for latest iOS settings
+    final DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+            requestSoundPermission: false,
+            requestBadgePermission: false,
+            requestAlertPermission: false,
+            onDidReceiveLocalNotification: onDidReceiveLocalNotification);
+
+    final AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('mipmap/ic_launcher');
+
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+      iOS: initializationSettingsIOS,
+      android: initializationSettingsAndroid,
     );
-
-    // if user don't grant permission
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('user grant permisson');
-    } else if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('user grant provisional permisson');
-    } else {
-      AppSettings.openAppSettings(type: AppSettingsType.notification);
-      print('user grant permisson');
-    }
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onDidReceiveNotificationResponse: onNotificationTap);
   }
 
-  void initLocalNotification(
-      BuildContext context, RemoteMessage message) async {
-    var androidInitializationSettings =
-        const AndroidInitializationSettings('mipmap/ic_launcher');
-    var iosInitializationSettings = const DarwinInitializationSettings();
-
-    var initializationSettings = InitializationSettings(
-      android: androidInitializationSettings,
-      iOS: iosInitializationSettings,
-    );
-
-    await _flutterLocalNotificationPlugin.initialize(initializationSettings,
-        onDidReceiveNotificationResponse: (payload) => {});
-  }
-
-  void firebaseInit() {
-    FirebaseMessaging.onMessage.listen((message) {
-      print(message.notification!.title.toString());
-      print(message.notification!.body.toString());
-      showNotification(message);
-    });
-  }
-
-  Future<void> showNotification(RemoteMessage message) async {
-    AndroidNotification? android = message.notification!.android;
-    AndroidNotificationChannel channel = AndroidNotificationChannel(
-        Random.secure().nextInt(100000).toString(),
-        'High Importance Notifications',
-        importance: Importance.max);
-
-    AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
-      channel.id.toString(),
-      channel.name.toString(),
-      icon: android?.smallIcon,
-      channelDescription: 'Your channel description',
-      importance: Importance.high,
-      priority: Priority.high,
-      ticker: 'ticker',
-    );
-
-    // For IOS
-
-    DarwinNotificationDetails darwinNotificationDetails =
-        DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    NotificationDetails notificationDetails = NotificationDetails(
-      android: androidNotificationDetails,
-      iOS: darwinNotificationDetails,
-    );
-
-    Future.delayed(Duration.zero, () {
-      _flutterLocalNotificationPlugin.show(
-        0,
-        message.notification!.title.toString(),
-        message.notification!.body.toString(),
-        notificationDetails,
-      );
-    });
-  }
-
-  Future<String> getDevideToken() async {
-    String? token = await messaging.getToken();
-    return token!;
-  }
-
-  void isTokenRefresh() async {
-    messaging.onTokenRefresh.listen((event) {
-      event.toString();
-      print('refresh');
-    });
-  }
-
-  // schedule notification
-  Future<void> scheduleNotification(
-    int id,
-    String title,
-    String body,
-    DateTime scheduledTime,
-  ) async {
-    await _flutterLocalNotificationPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'your_channel_id',
-          'your_channel_name',
-          // 'your_channel_description',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
-  }
-
-
-  /// -------------------------------------------------------------------------------
-   Stream<List<Reminder>> fetchRemindersFromFirestore() {
-  try {
-   
-   User? user = FirebaseAuth.instance.currentUser;
-        String userId = user!.uid;
-        
-     Stream<QuerySnapshot<Map<String, dynamic>>> stream = FirebaseFirestore.instance
-        .collection('task_list')
-        .doc(userId)
-        .collection('notes').snapshots()
-        ;
-
-    return stream.map((querySnapshot) {
-      return querySnapshot.docs.map((doc) {
-        // Assuming your Firestore document has 'task' and 'reminderTime' fields
-        String task = doc['task'];
-        String timestamp = doc['reminderTime'];
-     
-
-        return Reminder(
-          task: task,
-          reminderTime: timestamp,
-          bellIc: false,
+// request permission for IOS
+  void requestIOSPermissions() {
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
         );
-      }).toList();
-    });
-  } catch (e) {
-    print("Error fetching reminders: $e");
-    return Stream.value([]); // Return an empty stream in case of an error
   }
-}
 
-
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-void backgroundFetchHeadlessTask(String taskId) async {
-  try {
-    // Fetch reminder data from Firestore
-    var remindersStream = await fetchRemindersFromFirestore();
-
-     // Listen to the stream and schedule notifications
-    await for (var reminders in remindersStream) {
-      scheduleNotifications(reminders);
-    }
-  } finally {
-    BackgroundFetch.finish(taskId);
+  // request permission for Android
+  void requestAndroidPermission() {
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   }
-}
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void scheduleNotifications(List<Reminder> reminders) {
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  displayNotification({required String title, required String body}) async {
+    print("doing test");
 
-  // Initialize notification plugin if not already initialized
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('app_icon');
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-  );
-  flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  AndroidNotificationChannel channel = AndroidNotificationChannel(
-        Random.secure().nextInt(100000).toString(),
-        'High Importance Notifications',
-        importance: Importance.max);
+    var androidPlatformChannelSpecifics = const AndroidNotificationDetails(
+      'your channel id',
+      'your channel name',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
 
-  // Schedule notifications for each reminder
-  for (var reminder in reminders) {
-    flutterLocalNotificationsPlugin.zonedSchedule(
-      reminder.task.hashCode, // Unique ID for the notification
-      'Reminder',
-      reminder.task,
-      tz.TZDateTime.from( DateTime.parse(reminder.reminderTime) , tz.local),
-       NotificationDetails(
-        android: AndroidNotificationDetails(
-          channel.id.toString(),
-          'Reminders',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+    // var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'You change your theme',
+      'You changed your theme back !',
+      platformChannelSpecifics,
+      payload: 'It could be anything you pass',
     );
   }
-}
+
+  // Schdule Notification
+  scheduledNotification(int hour, int minutes, String task) async {
+    print("hour: ${hour} . minutes: ${minutes}");
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0,
+      task.toString(),
+      '',
+      convertTime(hour, minutes),
+      // tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
+      const NotificationDetails(
+          android: AndroidNotificationDetails(
+        'your channel id',
+        'your channel name',
+        importance: Importance.max,
+        priority: Priority.high,
+      )),
+
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: "${task.toString()}",
+    );
+  }
+
+  Future selectNotification(NotificationResponse? payload) async {
+    if (payload != null) {
+      print('notification payload: $payload');
+    } else {
+      print("Notification Done");
+    }
+    Get.lazyPut(() => AddTaskController());
+    Get.to(() => ReminderScreen(
+          taskLabel: payload.toString(),
+        ));
+  }
+
+  Future onDidReceiveLocalNotification(
+      int id, String? title, String? body, String? payload) async {
+    // display a dialog with the notification details, tap ok to go to another page
+    Get.dialog(Text("Welcome to Flutter"));
+  }
+
+  tz.TZDateTime convertTime(int hour, int minute) {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduleDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduleDate.isBefore(now)) {
+      scheduleDate = scheduleDate.add(const Duration(days: 1));
+    }
+    return scheduleDate;
+  }
+
+  Future<void> configureLocalTimeZone() async {
+    final String timeZone = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZone));
+  }
 }

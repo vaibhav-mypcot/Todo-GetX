@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:get/get.dart';
 import 'package:todo_app/routes/app_page.dart';
-import 'package:todo_app/storage/local_storage.dart';
 import 'package:todo_app/theme/app_theme.dart';
 
 class HomeController extends GetxService {
@@ -53,9 +52,6 @@ class HomeController extends GetxService {
       isDark.value = false;
       Get.changeTheme(KAppTheme.lightTheme);
     }
-
-    // box.write('isDark', isDark.value);
-    // GetStorage().write('isDark', isDark.value);
   }
 
   // retrive userdata from firestore

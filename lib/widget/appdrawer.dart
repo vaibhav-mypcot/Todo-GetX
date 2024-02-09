@@ -1,10 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:todo_app/pages/home/home_controller.dart';
-import 'package:todo_app/pages/signin/signin_controller.dart';
-import 'package:todo_app/routes/app_page.dart';
+import 'package:todo_app/services/firebase/notification_services.dart';
 import 'package:todo_app/storage/local_storage.dart';
 import 'package:todo_app/theme/colors.dart';
 import 'package:todo_app/theme/text_styles.dart';
@@ -133,16 +131,31 @@ class _AppDrawerState extends State<AppDrawerWidget> {
           ),
           Obx(() {
             return ListTile(
-              leading: Icon(Icons.dark_mode),
               title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Change Theme'.tr),
-                  const Spacer(),
+                  // Text('Change Theme'.tr),
+                  Icon(
+                    Icons.light_mode,
+                    color:
+                        controller.isDark.value ? Colors.grey : Colors.orange,
+                  ),
                   Switch(
                     value: controller.isDark.value,
                     onChanged: (state) {
                       controller.changeTheme(state);
+                      NotifyHelper().displayNotification(
+                          title: "Theme Changed",
+                          body: controller.isDark.value
+                              ? "Activated dark theme"
+                              : "Activated light theme");
                     },
+                  ),
+
+                  Icon(
+                    Icons.dark_mode,
+                    color:
+                        controller.isDark.value ? Colors.purple : Colors.grey,
                   ),
                 ],
               ),

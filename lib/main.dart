@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:background_fetch/background_fetch.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -15,21 +14,14 @@ import 'package:todo_app/localization/localization_data.dart';
 import 'package:todo_app/pages/welcome_page/welcome_binding.dart';
 import 'package:todo_app/routes/app_page.dart';
 import 'package:todo_app/routes/app_routes.dart';
-import 'package:todo_app/services/firebase/firebase_cloud_messaging.dart';
+import 'package:todo_app/services/firebase/notification_services.dart';
 import 'package:todo_app/storage/local_storage.dart';
 import 'package:todo_app/theme/colors.dart';
 
 void main() async {
   await GetStorage.init();
   WidgetsFlutterBinding.ensureInitialized();
-// Set up background fetch
-    // FirebaseCloudMessaging().scheduleNotifications;
-    // BackgroundFetch.registerHeadlessTask(FirebaseCloudMessaging().backgroundFetchHeadlessTask);
-
-  Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-  }
+  NotifyHelper().initializeNotification();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -47,13 +39,6 @@ void main() async {
     badge: true,
     sound: true,
   );
-
-  FirebaseCloudMessaging firebaseCloudMessaging = FirebaseCloudMessaging();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await firebaseCloudMessaging.setupFlutterNotifications();
-  await firebaseCloudMessaging.getFirebaseNotification();
-  firebaseCloudMessaging.firebaseInit();
-  // firebaseCloudMessaging.backgroundFetchHeadlessTask();
 
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   await analytics.logAppOpen();
@@ -77,8 +62,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   print(message.notification!.title.toString());
 }
-
-
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});

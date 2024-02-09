@@ -90,21 +90,11 @@ class _CustomCalendarState extends State<CustomCalendar> {
                 ),
                 SizedBox(width: 10.w),
                 Obx(
-                  () => Expanded(
-                    child: taskController.selectedTime == null
-                        ? Text(
-                            "Enter task date".tr,
-                            style: kTextStyleGabaritoRegular.copyWith(
-                              fontSize: 14.sp,
-                              color: kColorGreyNeutral400,
-                            ),
-                          )
-                        : Text(
-                            "${taskController.selectedTime.value.format(context)}",
-                            style: kTextStyleGabaritoRegular.copyWith(
-                              fontSize: 14.sp,
-                            ),
-                          ),
+                  () => Text(
+                    "${taskController.selectedTime.value.format(context)}",
+                    style: kTextStyleGabaritoRegular.copyWith(
+                      fontSize: 14.sp,
+                    ),
                   ),
                 ),
               ],
