@@ -19,6 +19,14 @@ class AddTaskScreen extends StatelessWidget with ValidationsMixin {
 
   @override
   Widget build(BuildContext context) {
+    final Map<String, dynamic>? args = Get.arguments as Map<String, dynamic>?;
+    final documentId = args?['documentId'];
+    final currentTime = args?['currentTime'];
+    final currentDate = args?['currentDate'];
+    final taskName = args?['taskName'];
+    final isCompleted = args?['isCompleted'];
+    final reminderTime = args?['reminderTime'];
+    final isBellIC = args?['isBellIc'];
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: SafeArea(
@@ -51,7 +59,7 @@ class AddTaskScreen extends StatelessWidget with ValidationsMixin {
                             SizedBox(height: 6.h),
                             CustomTextField(
                               controller: taskController.task,
-                              hintText: 'Enter your task'.tr,
+                              hintText: taskName ?? 'Enter your task'.tr,
                               hintStyle: kTextStyleGabaritoRegular.copyWith(
                                 fontSize: 14.sp,
                                 color: kColorGreyNeutral400,
@@ -74,7 +82,10 @@ class AddTaskScreen extends StatelessWidget with ValidationsMixin {
               SizedBox(height: 24.h),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 28.w),
-                child: const CustomCalendar(),
+                child: CustomCalendar(
+                  date: currentDate,
+                  time: currentTime,
+                ),
               ),
               SizedBox(height: 150.h),
               Padding(
@@ -84,10 +95,20 @@ class AddTaskScreen extends StatelessWidget with ValidationsMixin {
                   textColor: kColorWhite,
                   label: "Add Task".tr,
                   press: () async {
-                    Utils.showLoader();
-                    await taskController.onAddTaskClicked(context, bellIc);
-                    Get.back();
-                    Get.close(1);
+                    // Utils.showLoader();
+                    if (documentId != null) {
+                      await taskController.onAddTaskUpdateClicked(
+                          context,
+                          taskController.task.text,
+                          isCompleted,
+                          isBellIC,
+                          reminderTime,
+                          documentId);
+
+                      taskController.task.clear();
+                    } else {
+                      await taskController.onAddTaskClicked(context, bellIc);
+                    }
                   },
                 ),
               ),

@@ -6,8 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:todo_app/routes/app_page.dart';
 import 'package:uuid/uuid.dart';
 
-class AddTaskController extends GetxController {
+class AddTaskController extends GetxService {
   final GlobalKey<FormState> taskFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> reminderFormKey = GlobalKey<FormState>();
   DateTime now = DateTime.now();
 
   String currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
@@ -74,7 +75,7 @@ class AddTaskController extends GetxController {
 
     // Check if selected time is 5 minutes greater than the current time
     if (selectedDateTime.isAfter(currentDate.add(const Duration(seconds: 5)))) {
-      await onAddTaskClicked(context, bellIc);
+      onAddReminderTaskClicked(context, bellIc);
     } else {
       // Handle the case where the condition is not met
       Get.snackbar('Error',
@@ -123,6 +124,57 @@ class AddTaskController extends GetxController {
 
         taskFormKey.currentState!.reset();
         task.clear();
+        Get.close(1);
+
+        // Get.offAndToNamed(AppRoutes.homeScreen);
+      } on FirebaseAuthException catch (error) {
+        Get.snackbar(error.message ?? "task added failed", "Please try again",
+            snackPosition: SnackPosition.BOTTOM,
+            colorText: Colors.red,
+            backgroundColor: Colors.white);
+      }
+    }
+  }
+  // For reminder screen
+
+  Future<void> onAddReminderTaskClicked(
+      BuildContext context, bool? bellIC) async {
+    if (reminderFormKey.currentState!.validate()) {
+      try {
+        User? user = FirebaseAuth.instance.currentUser;
+        String userId = user!.uid;
+
+        var uuid = const Uuid();
+
+        // Generate a random unique string
+        String randomString = uuid.v4();
+
+        await FirebaseFirestore.instance
+            .collection('task_list')
+            .doc(userId)
+            .collection('notes')
+            .doc(randomString)
+            .set({
+          'task': task.text.toString(),
+          'isCompleted': false,
+          'date': date,
+          'time': selectedTime.value.format(context),
+          'taskId': DateFormat('HH:mm:ss').format(DateTime.now()),
+          'bellIC': bellIC,
+          'reminderTime': reminder,
+        });
+
+        Get.snackbar(
+          "Congratulation",
+          "Task task added successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          colorText: Colors.green,
+          backgroundColor: Colors.white,
+        );
+
+        reminderFormKey.currentState!.reset();
+        task.clear();
+        Get.close(1);
 
         // Get.offAllNamed(AppRoutes.homeScreen);
       } on FirebaseAuthException catch (error) {
@@ -134,9 +186,102 @@ class AddTaskController extends GetxController {
     }
   }
 
-  // @override
-  // void dispose() {
-  //   task.clear();
-  //   super.dispose();
-  // }
+  Future<void> onAddTaskUpdateClicked(
+      BuildContext context,
+      String? task,
+      bool? isCompleted,
+      bool? bellIC,
+      String? reminder,
+      String randomString) async {
+    if (taskFormKey.currentState!.validate() ||
+        reminderFormKey.currentState!.validate()) {
+      try {
+        User? user = FirebaseAuth.instance.currentUser;
+        String userId = user!.uid;
+
+        var uuid = const Uuid();
+
+        await FirebaseFirestore.instance
+            .collection('task_list')
+            .doc(userId)
+            .collection('notes')
+            .doc(randomString)
+            .update({
+          'task': task.toString(),
+          'isCompleted': false,
+          'date': date,
+          'time': selectedTime.value.format(context),
+          'taskId': DateFormat('HH:mm:ss').format(DateTime.now()),
+          'bellIC': bellIC,
+          'reminderTime': reminder,
+        });
+
+        Get.snackbar(
+          "Congratulation",
+          "Task task updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          colorText: Colors.green,
+          backgroundColor: Colors.white,
+        );
+
+        taskFormKey.currentState!.reset();
+        Get.close(1);
+      } on FirebaseAuthException catch (error) {
+        Get.snackbar(
+            error.message ?? "task updation failed", "Please try again",
+            snackPosition: SnackPosition.BOTTOM,
+            colorText: Colors.red,
+            backgroundColor: Colors.white);
+      }
+    }
+  }
+
+  Future<void> onReminderTaskUpdateClicked(
+      BuildContext context,
+      String? task,
+      bool? isCompleted,
+      bool? bellIC,
+      String? reminder,
+      String randomString) async {
+    if (reminderFormKey.currentState!.validate()) {
+      try {
+        User? user = FirebaseAuth.instance.currentUser;
+        String userId = user!.uid;
+
+        var uuid = const Uuid();
+
+        await FirebaseFirestore.instance
+            .collection('task_list')
+            .doc(userId)
+            .collection('notes')
+            .doc(randomString)
+            .update({
+          'task': task.toString(),
+          'isCompleted': false,
+          'date': date,
+          'time': selectedTime.value.format(context),
+          'taskId': DateFormat('HH:mm:ss').format(DateTime.now()),
+          'bellIC': bellIC,
+          'reminderTime': reminder,
+        });
+
+        Get.snackbar(
+          "Congratulation",
+          "Task task updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          colorText: Colors.green,
+          backgroundColor: Colors.white,
+        );
+
+        reminderFormKey.currentState!.reset();
+        Get.close(1);
+      } on FirebaseAuthException catch (error) {
+        Get.snackbar(
+            error.message ?? "task updation failed", "Please try again",
+            snackPosition: SnackPosition.BOTTOM,
+            colorText: Colors.red,
+            backgroundColor: Colors.white);
+      }
+    }
+  }
 }

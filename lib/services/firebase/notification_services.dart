@@ -8,7 +8,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:todo_app/pages/add_task/add_task_controller.dart';
 import 'package:todo_app/pages/reminder/reminder_screen.dart';
-import 'package:todo_app/routes/app_page.dart';
+
 
 class NotifyHelper {
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -46,29 +46,32 @@ class NotifyHelper {
       iOS: initializationSettingsIOS,
       android: initializationSettingsAndroid,
     );
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-        onDidReceiveNotificationResponse: onNotificationTap);
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: onNotificationTap,
+      onDidReceiveBackgroundNotificationResponse: onNotificationTap,
+    );
   }
 
 // request permission for IOS
-  void requestIOSPermissions() {
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-  }
+  // void requestIOSPermissions() {
+  //   flutterLocalNotificationsPlugin
+  //       .resolvePlatformSpecificImplementation<
+  //           IOSFlutterLocalNotificationsPlugin>()
+  //       ?.requestPermissions(
+  //         alert: true,
+  //         badge: true,
+  //         sound: true,
+  //       );
+  // }
 
-  // request permission for Android
-  void requestAndroidPermission() {
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-  }
+  // // request permission for Android
+  // void requestAndroidPermission() {
+  //   flutterLocalNotificationsPlugin
+  //       .resolvePlatformSpecificImplementation<
+  //           AndroidFlutterLocalNotificationsPlugin>()
+  //       ?.requestNotificationsPermission();
+  // }
 
   displayNotification({required String title, required String body}) async {
     print("doing test");
@@ -118,17 +121,12 @@ class NotifyHelper {
     );
   }
 
-  Future selectNotification(NotificationResponse? payload) async {
-    if (payload != null) {
-      print('notification payload: $payload');
-    } else {
-      print("Notification Done");
-    }
-    Get.lazyPut(() => AddTaskController());
-    Get.to(() => ReminderScreen(
-          taskLabel: payload.toString(),
-        ));
-  }
+  // Future selectNotification(NotificationResponse notificationResponse) async {
+  //   Get.lazyPut(() => AddTaskController());
+  //   onClickNotification.stream.listen((event) {
+  //     Get.to(() => ReminderScreen(taskLabel: event));
+  //   });
+  // }
 
   Future onDidReceiveLocalNotification(
       int id, String? title, String? body, String? payload) async {

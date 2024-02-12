@@ -7,7 +7,9 @@ import 'package:todo_app/theme/colors.dart';
 import 'package:todo_app/theme/text_styles.dart';
 
 class CustomCalendar extends StatefulWidget {
-  const CustomCalendar({super.key});
+  const CustomCalendar({super.key, this.date, this.time});
+  final String? date;
+  final String? time;
 
   @override
   State<CustomCalendar> createState() => _CustomCalendarState();
@@ -49,7 +51,7 @@ class _CustomCalendarState extends State<CustomCalendar> {
                   () => Expanded(
                     child: taskController.selectedDate.value == currentDate
                         ? Text(
-                            "Enter task date".tr,
+                            widget.date.toString(),
                             style: kTextStyleGabaritoRegular.copyWith(
                               fontSize: 14.sp,
                               color: kColorGreyNeutral400,
@@ -90,11 +92,20 @@ class _CustomCalendarState extends State<CustomCalendar> {
                 ),
                 SizedBox(width: 10.w),
                 Obx(
-                  () => Text(
-                    "${taskController.selectedTime.value.format(context)}",
-                    style: kTextStyleGabaritoRegular.copyWith(
-                      fontSize: 14.sp,
-                    ),
+                  () => Expanded(
+                    child: taskController.selectedTime.value == currentTime
+                        ? Text(
+                            "${widget.time}",
+                            style: kTextStyleGabaritoRegular.copyWith(
+                              fontSize: 14.sp,
+                            ),
+                          )
+                        : Text(
+                            "${taskController.selectedTime.value.format(context)}",
+                            style: kTextStyleGabaritoRegular.copyWith(
+                              fontSize: 14.sp,
+                            ),
+                          ),
                   ),
                 ),
               ],

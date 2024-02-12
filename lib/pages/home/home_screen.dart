@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:todo_app/components/home_components/empty_screen.dart';
 import 'package:todo_app/pages/home/home_controller.dart';
 import 'package:todo_app/pages/signin/signin_controller.dart';
+import 'package:todo_app/routes/app_page.dart';
 import 'package:todo_app/services/firebase/notification_services.dart';
 import 'package:todo_app/theme/colors.dart';
 import 'package:todo_app/widget/appdrawer.dart';
@@ -218,26 +219,54 @@ class HomeScreen extends StatelessWidget {
                                   .doc(docID)
                                   .delete();
                             },
-                            child: TaskTile(
-                              documentId: docID,
-                              currentTime: time,
-                              currentDate: date,
-                              taskName: task.toString(),
-                              taskCompleted: isCompleted,
-                              onChanged: (value) {
-                                print("pressed index: $index");
-                                homeController.checkBoxChanged(value, index);
-                                playAudio();
+                            child: GestureDetector(
+                              onTap: () {
+                                if (isBellIc) {
+                                  Get.toNamed(AppRoutes.reminderScreen,
+                                      arguments: {
+                                        'documentId': docID,
+                                        'isCompleted': isCompleted,
+                                        'currentTime': time,
+                                        'currentDate': date,
+                                        'taskName': task.toString(),
+                                        'isBellIc': isBellIc,
+                                        'reminderTime': reminder,
+                                      });
+                                } else {
+                                  Get.toNamed(AppRoutes.addTaskScreen,
+                                      arguments: {
+                                        'documentId': docID,
+                                        'isCompleted': isCompleted,
+                                        'currentTime': time,
+                                        'currentDate': date,
+                                        'taskName': task.toString(),
+                                        'isBellIc': isBellIc,
+                                        'reminderTime': reminder,
+                                      });
+                                }
                               },
-                              onDelete: (docId) {
-                                FirebaseFirestore.instance
-                                    .collection('task_list')
-                                    .doc(signinController.auth.currentUser!.uid)
-                                    .collection('notes')
-                                    .doc(docID)
-                                    .delete();
-                              },
-                              bellIc: isBellIc,
+                              child: TaskTile(
+                                documentId: docID,
+                                currentTime: time,
+                                currentDate: date,
+                                taskName: task.toString(),
+                                taskCompleted: isCompleted,
+                                onChanged: (value) {
+                                  print("pressed index: $index");
+                                  homeController.checkBoxChanged(value, index);
+                                  playAudio();
+                                },
+                                onDelete: (docId) {
+                                  FirebaseFirestore.instance
+                                      .collection('task_list')
+                                      .doc(signinController
+                                          .auth.currentUser!.uid)
+                                      .collection('notes')
+                                      .doc(docID)
+                                      .delete();
+                                },
+                                bellIc: isBellIc,
+                              ),
                             ),
                           );
                         },

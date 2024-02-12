@@ -20,12 +20,20 @@ class ReminderScreen extends StatelessWidget with ValidationsMixin {
 
   @override
   Widget build(BuildContext context) {
+    final Map<String, dynamic>? args = Get.arguments as Map<String, dynamic>?;
+    final documentId = args?['documentId'];
+    final currentTime = args?['currentTime'];
+    final currentDate = args?['currentDate'];
+    final isCompleted = args?['isCompleted'];
+    final reminderTime = args?['reminderTime'];
+    final isBellIC = args?['isBellIc'];
+    final taskName = args?['taskName'];
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Form(
-            key: taskController.taskFormKey,
+            key: taskController.reminderFormKey,
             child: Column(
               children: [
                 CustomAppbar(
@@ -52,9 +60,7 @@ class ReminderScreen extends StatelessWidget with ValidationsMixin {
                             SizedBox(height: 6.h),
                             CustomTextField(
                               controller: taskController.task,
-                              hintText: taskLabel == null
-                                  ? 'Enter your task'.tr
-                                  : taskLabel.toString(),
+                              hintText: taskName ?? 'Enter your task'.tr,
                               hintStyle: kTextStyleGabaritoRegular.copyWith(
                                 fontSize: 14.sp,
                                 color: kColorGreyNeutral400,
@@ -76,7 +82,10 @@ class ReminderScreen extends StatelessWidget with ValidationsMixin {
                 SizedBox(height: 24.h),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 28.w),
-                  child: const CustomCalendar(),
+                  child: CustomCalendar(
+                    date: currentDate,
+                    time: currentTime,
+                  ),
                 ),
                 SizedBox(height: 150.h),
                 Padding(
@@ -85,11 +94,21 @@ class ReminderScreen extends StatelessWidget with ValidationsMixin {
                     color: kColorPrimary,
                     textColor: kColorWhite,
                     label: "Add Task".tr,
-                    press: () {
-                      Utils.showLoader();
-                      taskController.checkDateTime(context, bellIc);
-                      Get.back();
-                      Get.close(1);
+                    press: () async {
+                      if (documentId != null) {
+                        await taskController.onReminderTaskUpdateClicked(
+                            context,
+                            taskController.task.text,
+                            isCompleted,
+                            isBellIC,
+                            reminderTime,
+                            documentId);
+
+                        taskController.task.clear();
+                      } else {
+                        taskController.checkDateTime(context, bellIc);
+                        taskController.task.clear();
+                      }
                     },
                   ),
                 ),
